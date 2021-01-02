@@ -1,0 +1,20 @@
+<html>
+<head>
+  <title>Example minimum receiver</title>
+  <script src="//www.gstatic.com/cast/sdk/libs/receiver/2.0.0/cast_receiver.js"></script>
+</head>
+<body>
+
+  minimum
+  
+  <video id='media'/>
+  <script>
+    window.onload = function() {
+      window.mediaElement = document.getElementById('media');
+      window.mediaManager = new cast.receiver.MediaManager(window.mediaElement);
+      window.castReceiverManager = cast.receiver.CastReceiverManager.getInstance();
+      window.castReceiverManager.start();
+    }
+  </script>
+</body>
+</html>

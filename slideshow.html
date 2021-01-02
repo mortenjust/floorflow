@@ -1,0 +1,208 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+	<head>
+
+		<title>Floor flow</title>
+		<meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+		
+
+		<link rel="stylesheet" href="css/supersized.css" type="text/css" media="screen" />
+		<link rel="stylesheet" href="theme/supersized.shutter.css" type="text/css" media="screen" />
+		
+		<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.min.js"></script>
+		<script type="text/javascript" src="js/jquery.easing.min.js"></script>
+		
+		<script type="text/javascript" src="js/supersized.3.2.4.js"></script>
+		<script type="text/javascript" src="theme/supersized.shutter.js"></script>
+		<script type="text/javascript" src="colorthief.js"></script>
+			<script type="text/javascript" src="colors.js"></script>
+		
+		<script type="text/javascript">
+			
+			var images = [];
+			var calls = 0;
+
+
+			function getDominantColor(yourImageURL){
+					xi=new XMLHttpRequest();
+					xi.open("GET","http://mortenjust.com/floorflow/getimage.php?url="+yourImageURL,true);
+					xi.send();
+
+					xi.onreadystatechange=function() {
+					  if(xi.readyState==4 && xi.status==200) {
+					    img=new Image;
+					    img.src=xi.responseText;
+					    img.onload=function(){ 
+					      var colorThief = new ColorThief();
+					      console.log("here is the function");
+					      console.log(colorThief.getColor(img));
+
+					      window.setTimeout(setHueColor(colorThief.getColor(img)),2000);
+
+					      
+					    }
+					  }
+					}
+
+			}
+			
+
+			function setHueColor(rgb){
+
+				console.log('setting huse colors');
+				console.log(rgb);
+
+				var xy=colors.rgbToCIE1931(rgb[0],rgb[1],rgb[2]);
+
+				$.ajax({url:'http://192.168.0.206/api/newdeveloper/lights/4/state', data:'{"bri": 1, "xy":['+xy[0]+', '+xy[1]+'], "on": true}', type:'put'});
+
+			}
+
+            function install_supersized(pimages) {
+            
+                $.supersized({
+				        
+		            fit_always: 1,
+		            random: 0,
+		            slideshow: 1,
+		
+		            start_slide: 1, 
+
+
+			        // Functionality
+			        slide_interval          :   86400000,		// Length between transitions, 86400000 is a day
+			        transition              :   1, 			// 0-None, 1-Fade, 2-Slide Top, 3-Slide Right, 4-Slide Bottom, 5-Slide Left, 6-Carousel Right, 7-Carousel Left
+			        transition_speed		:	500,		// Speed of transition
+													           
+			        // Components							
+			        slide_links				:	'blank',	// Individual links for each slide (Options: false, 'number', 'name', 'blank')
+			        slides 					:  	pimages
+
+
+			
+		        });
+
+
+                	// now set the color
+			        getDominantColor(pimages[0].image);
+			        
+			        
+            }
+            
+            function fetch_images(tumblr_name, depth) {
+            
+                var reblogs = [];
+                calls += 1;
+            
+                $.getJSON("http://api.tumblr.com/v2/blog/" + tumblr_name + ".tumblr.com/posts/photo?jsonp=?", {
+                        api_key: 'SBbcngNIIYpCXOkRwMJ7X62Pgi9trXHdigXBfJJmCOJBIWrSf0',
+                        reblog_info: true
+                    },
+                    function(data) {
+                    
+                        calls -= 1;
+                        
+                        for (var i=0; i<data.response.posts.length; i++) {
+                            var post = data.response.posts[i];
+                            var alt_sizes = post.photos[0].alt_sizes;
+                            
+                            var title = post.blog_name;
+                            
+                            if (post.caption != undefined) {
+                                var html = post.caption;
+                                var div = document.createElement("div");
+                                div.innerHTML = html;
+                                title += " - " + (div.textContent || div.innerText || "");
+                            }
+                            
+				            images.push(
+				                {
+				                    image: alt_sizes[0].url,
+				                    title: title,
+				                    thumb: alt_sizes[alt_sizes.length-1].url
+				                }
+				            );
+				            
+				            var reblogged = post.reblogged_root_name;
+				            
+				            if (reblogged != undefined)
+				                if (reblogs.indexOf(reblogged) == -1)
+				                    reblogs.push(reblogged);
+				        }
+				        
+				        if (depth > 0)
+				            for (var i=0; i<reblogs.length; i++)
+				                fetch_images(reblogs[i], depth-1);
+				        
+				        if (calls == 0)
+    				        install_supersized(images);
+				            
+                    }
+                );
+            }
+			
+function refreshAt(hours, minutes, seconds) {
+    var now = new Date();
+    var then = new Date();
+
+    if(now.getHours() > hours ||
+       (now.getHours() == hours && now.getMinutes() > minutes) ||
+        now.getHours() == hours && now.getMinutes() == minutes && now.getSeconds() >= seconds) {
+        then.setDate(now.getDate() + 1);
+    }
+    then.setHours(hours);
+    then.setMinutes(minutes);
+    then.setSeconds(seconds);
+
+    var timeout = (then.getTime() - now.getTime());
+    setTimeout(function() { window.location.reload(true); }, timeout);
+}
+
+
+			jQuery(function($){
+			    $('#supersized-loader').hide();
+			    
+			    
+			    refreshAt(5,0,0);
+
+
+			    fetch_images("floorflow", 1);
+
+			    
+
+
+			    $("#name_input").keypress(function(event) {
+			        if (event.which == 13) {
+			            $("#name_input").hide();
+			            $('#supersized-loader').show();
+			            
+			            fetch_images($("#name_input").val(), 1);
+			        }
+			    });
+		    });
+		    
+		</script>
+		
+	</head>
+	
+	<style type="text/css">
+
+	li img { -webkit-transform:rotate(-90deg); height:100%;}
+
+		ul#demo-block{ margin:0 15px 15px 15px; }
+			ul#demo-block li{ margin:0 0 10px 0; padding:10px; display:inline; float:left; clear:both; color:#aaa; background:url('img/bg-black.png'); font:11px Helvetica, Arial, sans-serif; }
+			ul#demo-block li a{ color:#eee; font-weight:bold; }
+			
+		#name_input { width: 180px; height: 30px; left: 50%; margin: -15px 0 0 -90px; position: absolute; top: 50%; z-index: 0; }
+	</style>
+
+<body>
+<div id="all">
+	
+	<!--Control Bar-->
+
+</div>
+</body>
+</html>
