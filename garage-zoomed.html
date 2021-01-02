@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+    <title>Example 02.01 - Basic Scene</title>
+    <script type="text/javascript" src="three.min.js"></script>
+    <script type="text/javascript" src="jquery-1.11.1.min.js"></script>
+    <script type="text/javascript" src="Stats.js"></script>
+    <script type="text/javascript" src="dat.min.js"></script>
+    <script type="text/javascript" src="carcolors.js"></script>
+    <style>
+        body{
+            /* set margin to 0 and overflow to hidden, to go fullscreen */
+            margin: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+
+<div id="Stats-output">
+</div>
+<!-- Div which will hold the Output -->
+<div id="WebGL-output">
+</div>
+
+<!-- Javascript code that runs our Three.js examples -->
+<script type="text/javascript">
+
+    // once everything is loaded, we run our Three.js stuff.
+    $(function () {
+
+        var garage = { occupied:0, change:0, capacity:0, interval:5000, initialRender: true };
+
+
+        var stats = initStats();
+        var i;
+
+        // create a scene, that will hold all our elements such as objects, cameras and lights.
+        var scene = new THREE.Scene();
+
+        // create a camera, which defines where we're looking at.
+        var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+        // create a render and set the size
+        var renderer = new THREE.WebGLRenderer();
+
+        renderer.setClearColor(0x000000, 1.0);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMapEnabled = true;
+
+        // create the ground plane
+        var planeGeometry = new THREE.PlaneGeometry(40,60, 1, 1);
+        var planeMaterial = new THREE.MeshLambertMaterial({color: 0xffffff, transparent:true, opacity:1.0});
+        var plane = new THREE.Mesh(planeGeometry,planeMaterial);
+        plane.receiveShadow  = true;
+
+            // rotate and position the plane
+        plane.rotation.x=-0.5*Math.PI;
+        plane.position.x=0
+        plane.position.y=0
+        plane.position.z=0
+        
+
+
+        // add the plane to the scene
+        scene.add(plane);
+
+        // position and point the camera to the center of the scene
+                // add subtle ambient lighting
+        var ambientLight = new THREE.AmbientLight(0x0c0c0c);
+        scene.add(ambientLight);
+
+        // add spotlight for the shadows
+        var spotLight = new THREE.SpotLight( 0xffffff );
+        spotLight.position.set( -40, 60, -10 );
+        spotLight.castShadow = true;
+        scene.add( spotLight );
+
+        // add spotlight for the shadows
+        var spotLight2 = new THREE.SpotLight( 0xffffff );
+        spotLight2.position.set( 40, -60, 10 );
+        spotLight2.castShadow = true;
+        scene.add( spotLight2 );
+
+
+
+        // add the output of the renderer to the html element
+        $("#WebGL-output").append(renderer.domElement);
+
+        // call the render function
+        var step=0;
+
+        var controls = new function() {
+            this.rotationSpeed = 0.0054;
+            this.numberOfObjects = scene.children.length;
+            this.camx = -35;
+            this.camy = -27;
+            this.camz = -1;
+            this.fov = 15.5;
+
+
+            this.removeCube = function() {
+                var allChildren = scene.children;
+                var lastObject = allChildren[allChildren.length-1];
+                if (lastObject instanceof THREE.Mesh) {
+                    scene.remove(lastObject);
+                    this.numberOfObjects = scene.children.length;
+                }
+            }
+
+            this.addCube = function() {
+
+                var cubeSize = Math.ceil((Math.random() * .1));
+                var cubeGeometry = new THREE.BoxGeometry(cubeSize,cubeSize,cubeSize*0.5);
+                var ranint = getRandomInt(0,100);
+                var thisColor = colors[ranint];
+                console.log(thisColor+' is '+ranint);
+
+                var cubeMaterial = new THREE.MeshLambertMaterial({color: thisColor });
+                var cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+                cube.castShadow = true;
+                cube.name = "cube-" + scene.children.length;
+
+                // position the cube randomly in the scene
+                cube.position.y=-30 + Math.round((Math.random() * planeGeometry.parameters.width));
+                cube.position.x= Math.round((Math.random() * 1));
+                cube.position.z=-20 + Math.round((Math.random() * planeGeometry.parameters.height));                
+
+                // add the cube to the scene
+                scene.add(cube);
+                //console.log(planeGeometry);
+                this.numberOfObjects = scene.children.length;
+            };
+
+            this.outputObjects = function() {
+                console.log(scene.children);
+            }
+        }
+
+        var gui = new dat.GUI();
+        gui.add(controls, 'rotationSpeed',0,0.5);
+        gui.add(controls, 'camx',-200,200);
+        gui.add(controls, 'camy',-200,200);
+        gui.add(controls, 'camz',-200,200);
+        gui.add(controls, 'fov', -100,100);
+
+        gui.add(controls, 'addCube');
+        gui.add(controls, 'removeCube');
+        gui.add(controls, 'outputObjects');
+        gui.add(controls, 'numberOfObjects').listen();
+
+
+        render();
+
+        updateGarage();
+
+        function render() {
+            stats.update();
+
+            // rotate the cubes around its axes
+            scene.traverse(function(e) {
+                if (e instanceof THREE.Mesh && e != plane ) {
+
+                    e.rotation.x+=controls.rotationSpeed;
+                    //e.rotation.y+=controls.rotationSpeed;
+                    //e.rotation.z+=controls.rotationSpeed;
+                }
+            });
+
+            
+            camera.position.x = controls.camx;
+            camera.position.y = controls.camy;
+            camera.position.z = controls.camz;
+            camera.lookAt(scene.position);
+            camera.fov = controls.fov;
+            camera.updateProjectionMatrix();
+            
+            //console.log(camera.position);
+
+            requestAnimationFrame(render);
+            renderer.render(scene, camera);
+        }
+
+        function initStats() {
+
+            var stats = new Stats();
+
+            stats.setMode(0); // 0: fps, 1: ms
+
+            // Align top-left
+            stats.domElement.style.position = 'absolute';
+            stats.domElement.style.left = '0px';
+            stats.domElement.style.top = '0px';
+
+            $("#Stats-output").append( stats.domElement );
+
+            return stats;
+        }
+
+
+
+// --- garage data stuff ---- 
+
+
+        function updateGarage(){
+          
+          console.log("updating...");
+          
+          var parkingUrl = "https://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20json%20where%20url%3D%22http%3A%2F%2Fapi.sfpark.org%2Fsfpark%2Frest%2Favailabilityservice%3Flat%3D37.7832776731%26long%3D-122.405537559%26radius%3D0.10%26uom%3Dmile%26response%3Djson%22&format=json&diagnostics=true&callback=";
+         
+          $.ajax({
+            url:parkingUrl,
+            type:'GET',
+            dataType:'JSON',
+            success: function(data){
+              garage.occupied = data.query.results.json.AVL[0].OCC;
+              garage.capacity = data.query.results.json.AVL[0].OPER;
+
+              if(garage.previous!==0) {
+                    garage.change = garage.occupied - garage.previous;
+                    }
+
+        // TODO - add as many as changed or removed
+            if(garage.change > 0) { 
+
+                    for(var i=0; i<garage.change; i++) {controls.addCube(); }
+                }
+            
+                if(garage.change < 0) { 
+
+                        for(var i=0; i>garage.change; i--) { controls.removeCube(); }
+                    }
+
+              garage.previous = garage.occupied;
+              
+              console.log(garage);
+
+              if(garage.initialRender==true) {
+                for(i=0; i<garage.occupied; i++) {controls.addCube(); }
+                garage.initialRender = false;
+                console.log('just added a lot. intialrender is now' + garage.initialRender);
+              }
+
+            }
+          });
+        }
+
+        // updateGarage();
+
+         window.setInterval(updateGarage, garage.interval);
+
+
+
+
+    });
+
+
+
+</script>
+</body>
+</html>

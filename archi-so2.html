@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html>
+<head>
+<link rel="stylesheet" type="text/css" href="style.css">
+<link href='http://fonts.googleapis.com/css?family=Quicksand:400,700' rel='stylesheet' type='text/css'>
+<script src="three.min.dev.js"></script>
+<script src="OrbitControls.js?ddd=3909230asdf923"></script>
+<script src="src/loaders/JSONLoader.js"></script>
+<script src="jquery-1.11.1.min.js"></script>
+
+<script>
+	
+	var container, stats, geometry;
+
+
+var titleFirst =  ['Casa da', 'Central', 'Civic', 'Centro', 'Fundaçao', 'Ministry of'];
+var titleSecond = ['Musica', 'Tobacco', 'House', 'Justice', 'Tower', 'Center', 'Museum', 'Design', 'History', 'Art', 'Agriculture', 'Park']
+var nameFirst =   ['Kevin', 'Le', 'Louis', 'Arne', 'Robert', 'Alvaro', 'Fuji']
+var nameLast =    ['Scarpo', 'Kikilainen', 'Wroght', 'Vogel', 'Harakama']
+
+var isArtcast = true;
+
+var thisScale = 3; // will be data determined
+
+
+var line;
+var camera, controls, scene, renderer, planeMesh;
+var cross, primitives, chosenPrimitive;
+var scales = [];
+var colors = { darkest: 0x181715, dark:0x7b746c, lightest:0x9c9793, light:0x989380, clear:0xccc6b8 }
+var cameraWidth, cameraHeight;
+var enableControls = true;
+function init(){};
+
+
+$(function(){
+
+init();
+animate();
+
+
+})
+
+function init() {
+
+
+
+  cameraWidth = window.innerWidth; 
+  cameraHeight = window.innerHeight;
+
+  camera = new THREE.PerspectiveCamera( 60, cameraWidth / cameraHeight, .1, 10000 );
+
+  if(isArtcast) {
+      camera.up.set(0,0,-1);
+      document.getElementById("name").style['transform'] = 'rotate(90deg)';
+    //  document.getElementById("name").style['left'] = '50%';
+      document.getElementById("name").style['top'] = '50%';
+      camera.fov = 40;
+      camera.updateProjectionMatrix();
+    }
+
+
+//  camera.position.z = -296;
+ // camera.position.x = 17.5;
+ // camera.position.y = 253.3;
+
+// camera.position = new THREE.Vector3(-10,-10,-10)
+
+
+  //camera.rotation.order = "YXZ";
+  //camera.rotation.y = 23;
+  camera.rotation.x = -300;
+  //camera.rotation.z = 300;
+ 
+if(enableControls){
+	controls = new THREE.OrbitControls(camera);
+	controls.addEventListener( 'change', render );
+	controls.autoRotateSpeed = 5;
+	controls.autoRotate = true;
+
+
+}
+
+// camera zero perspective
+	camera.position.x = -300;
+	camera.position.y = 15;
+
+  
+
+// camera seen from top 
+//	camera.position.set(31.8, 298, 19.6);
+
+  scene = new THREE.Scene();
+
+  //scene.fog = new THREE.FogExp2( 0x000000, 0.002 );
+
+  // world
+
+	camera.lookAt(scene.position)
+
+
+primitives = ['box', 'cylinder'];
+
+  for(var i =0; i<5; i++){
+
+  	// sizes 
+
+	
+	chosenPrimitive = primitives[Math.round(Math.random() * primitives.length)-1];
+	material = 	new THREE.MeshPhongMaterial( {color: colors.clear, transparent:true});
+
+  material.opacity = Math.random();
+
+	if(chosenPrimitive=='box') {
+		scales[0] = (Math.random() * 50) * thisScale;    // x
+		scales[1] = (Math.random() * 250) * thisScale;  
+		scales[2] = (Math.random() * 150) * thisScale;
+		geometry = new THREE.BoxGeometry(scales[0], scales[1], scales[2]);
+	}
+
+	if(chosenPrimitive=='cylinder') {
+		scales[0] = (Math.random() * 50) * thisScale;    // x
+		scales[1] = (Math.random() * 50) * thisScale;  
+		scales[2] = (Math.random() * 150) * thisScale;
+		geometry = new THREE.CylinderGeometry( scales[0], scales[1], scales[2] );
+	}
+	
+	//Choose a name
+
+  var title = titleFirst[Math.round(Math.random() * (titleFirst.length-1))] + ' ' + titleSecond[Math.round(Math.random() * (titleSecond.length-1))];
+  var name = nameFirst[Math.round(Math.random() * (nameFirst.length-1))] + ' ' + nameLast[Math.round(Math.random() * (nameLast.length-1))];
+
+	document.getElementById('title').innerHTML = title;
+  document.getElementById('architect').innerHTML = 'by '+name;
+
+	console.log("chosen:"+chosenPrimitive)
+
+	var cubeMesh = new THREE.Mesh(geometry, material);
+
+	cubeMesh.position.y = scales[1]-(scales[1]*.5);
+	console.log("scales 0 er "+scales[1]*.5)
+	cubeMesh.position.x = 0;
+	cubeMesh.position.z = 0;
+
+	wireframe = new THREE.WireframeHelper( cubeMesh );
+	wireframe.material.linewidth = 3;
+	wireframe.material.color.set( colors.darkest );
+	cubeMesh.castShadow = true;
+	cubeMesh.receiveShadow = true;
+	scene.add( wireframe );
+	scene.add( cubeMesh );
+
+
+
+} // generate shapes
+
+  //controls.target(cubeMesh);
+
+
+
+    // create the ground plane
+   /* geometry = new THREE.BoxGeometry(5000,1,5000);
+    material = new  THREE.MeshLambertMaterial({ color: colors.clear })
+    planeMesh = new THREE.Mesh(geometry,material)
+    planeMesh.receiveShadow = true
+    planeMesh.position.x = -2;
+    //scene.add(planeMesh)
+	*/
+
+	// scene.add(new THREE.AxisHelper(1000));
+	//cene.add(new THREE.GridHelper(100,10));
+
+	   var loader = new THREE.JSONLoader();
+   loader.load('models/manphone.js', function
+     (personGeometry, mat) {
+
+       var people = [];
+
+       for(var i=0;i<2;i++) {
+	       people[i] = new THREE.Mesh(personGeometry, mat[0]);
+	       people[i].scale.x = .15;
+	       people[i].scale.y = .15;
+	       people[i].scale.z = .15;
+	       people[i].position.x = Math.random() * 180 - 90;
+	       people[i].position.z = Math.random() * 180 - 90;
+	       people[i].rotation.y = Math.random() * 180;
+	       scene.add(people[i]);
+	        }
+
+     }, './models/');
+
+
+
+  // lights
+
+      var pointColor = colors.clear;
+    var spotLight = new THREE.SpotLight(pointColor);
+    spotLight.position.set(10000, 10000, 0);
+    spotLight.castShadow = true;
+    spotLight.shadowCameraNear = 2;
+    spotLight.shadowCameraFar = 200;
+    spotLight.shadowCameraFov = 130;
+    ///spotLight.target = planeMesh;
+    spotLight.distance = 0;
+    //scene.add(spotLight)
+
+    var ambiColor = colors.clear;
+    var ambientLight = new THREE.AmbientLight(ambiColor);
+    scene.add(ambientLight);
+  
+   var hemiLight = new THREE.HemisphereLight(0xFFFFFF, 0xFFFFFF, 1);
+   hemiLight.position.set(0, 1000, 0);
+   //scene.add(hemiLight);
+
+
+  // renderer
+
+  renderer = new THREE.WebGLRenderer( { antialias: true } );
+   renderer.shadowMapEnabled = true;
+  renderer.shadowMapSoft = true;
+  renderer.setClearColor( colors.clear, 1 );
+  renderer.setSize( window.innerWidth, window.innerHeight );
+
+  container = document.getElementById( 'container' );
+  container.appendChild( renderer.domElement );
+
+  window.addEventListener( 'resize', onWindowResize, false );
+
+}
+
+function onWindowResize() {
+
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+
+  renderer.setSize( window.innerWidth, window.innerHeight );
+
+  render();
+
+}
+
+var i =-60;
+function animate() {
+  render();
+  requestAnimationFrame( animate );
+
+  if(enableControls){
+  controls.update();
+ }
+
+}
+
+function render() {
+//  console.log(line.geometry)
+  renderer.render( scene, camera );
+}
+
+
+
+</script>
+	<title>Generated Buildings</title>
+</head>
+<body>
+
+
+<div id="container"></div>  
+
+<div id='name'>
+  <div id="title">Centro Musica</div>
+  <div id ="architect">by Jose Halua</div>
+</div>
+
+</body>
+</html>
+

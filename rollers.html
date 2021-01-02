@@ -1,0 +1,146 @@
+ <!DOCTYPE html>
+   <html>
+     <head>
+      <script src="three.min.js"></script>
+ <script src="jquery-1.11.1.min.js"></script>
+ <script src="stats.js"></script>
+ <script src="dat.min.js"></script>
+ 
+       <title>Example 01.01 - Basic skeleton</title>
+    <style>
+        body{
+            /* set margin to 0 and overflow to hidden,
+               to use the complete page */
+margin: 0;
+            overflow: hidden;
+        }
+    </style>
+  </head>
+<body>
+<!-- Div which will hold the Output -->
+<div id="stats-output"></div>
+<div id="WebGL-output">
+
+</div>
+<!-- Javascript code that runs our Three.js examples -->
+    <script type="text/javascript">
+    // once everything is loaded, we run our Three.js stuff.
+
+   var controls = new function() {
+               this.rotationSpeed = 0.006;
+               this.scale = 1;
+               this.zoomFactor = 52.4;
+           }
+
+
+    function initStats(){
+    	var stats = new Stats();
+    	stats.setMode(0);
+    	stats.domElement.style.position = 'absolute';
+    	stats.domElement.style.left = '0px';
+    	stats.domElement.style.top = '0px';
+    	$('#stats-output').append(stats.domElement);
+    	return stats;
+    }
+
+    var step = 0;
+
+
+    $(function () {
+          // here we'll put the Three.js stuff
+
+           var scene = new THREE.Scene();
+           var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight
+, 0.1, 1000);
+           var renderer = new THREE.WebGLRenderer();
+           var stats = initStats();
+
+		   var gui = new dat.GUI();
+		   gui.add(controls, 'rotationSpeed',0,0.05);
+		   gui.add(controls, 'scale', 1,10);
+       gui.add(controls, 'zoomFactor', 1,100);
+
+
+ var planeGeometry = new THREE.PlaneGeometry(600,20);
+   var planeMaterial = new THREE.MeshLambertMaterial(
+                                         {color: 0xffffff});
+   var plane = new THREE.Mesh(planeGeometry,planeMaterial);
+
+
+
+           //plane.rotation.x=-0.5*Math.PI;
+
+       plane.position.x = 15;
+           plane.position.y = 0;
+           plane.position.z = 10;
+           plane.receiveShadow = true;
+          // scene.add(plane);
+		   
+
+		   function renderScene() { // ------------------------------------------------
+		    	step += controls.rotationSpeed;
+		    	stats.update();
+		    	requestAnimationFrame(renderScene);
+		    	
+				var i;
+				cubes.forEach(function(element, index, array){
+					cubes[index].rotation.x = step-index/2;
+					cubes[index].scale.x = cubes[index].scale.y = controls.scale;
+				});
+
+          camera.fov = controls.zoomFactor;
+         camera.updateProjectionMatrix();
+         
+
+		    	renderer.render(scene,camera);
+
+		    } /// renderscene 
+
+
+
+           renderer.setClearColor(0x000, 1.0);
+           renderer.setSize(window.innerWidth, window.innerHeight);
+             renderer.shadowMapEnabled = true;
+
+//#cubes
+   var cubeGeometry = new THREE.BoxGeometry(100,10,1);
+   var cubeMaterial = new THREE.MeshLambertMaterial(
+                                         {color: 0xffffff });
+
+    var cubes = [];
+    var i = 0;
+    for(i=0;i<100;i++) {
+    	cubes[i] = new THREE.Mesh(cubeGeometry, cubeMaterial);
+    	cubes[i].position.x = i;
+    	cubes[i].position.y = 0;
+    	cubes[i].scale = i;
+    	cubes[i].position.z = -i;
+    	//cubes[i].castShadow = true;
+    	scene.add(cubes[i]);
+    }
+
+      
+
+//#light
+   var spotLight = new THREE.SpotLight( 0xffffff );
+   spotLight.position.set( -20, 100, 50 );
+     spotLight.castShadow = true;
+   scene.add( spotLight );
+
+
+//#camera  
+           
+           camera.position.x = 20;
+           camera.position.y = 10;
+           camera.position.z = 10;
+           camera.lookAt(scene.position);
+           $("#WebGL-output").append(renderer.domElement);
+           
+          camera.updateProjectionMatrix();
+
+           renderScene();
+
+    }); // jquery load
+    </script>
+  </body>
+</html>
